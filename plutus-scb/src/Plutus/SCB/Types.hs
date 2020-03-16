@@ -61,6 +61,7 @@ data SCBError
     | WalletClientError ServantError
     | NodeClientError ServantError
     | SigningProcessError ServantError
+    | ChainIndexError ServantError
     | WalletError WalletAPIError
     | ContractCommandError Int Text
     | OtherError Text
@@ -84,9 +85,9 @@ instance Pretty PartiallyDecodedResponse where
     pretty PartiallyDecodedResponse {newState, hooks} =
         vsep
             [ "State:"
-            , indent 2 $ pretty $ BS8.unpack $ JSON.encodePretty newState
+            , indent 2 $ pretty $ take 120 $ BS8.unpack $ JSON.encodePretty newState
             , "Hooks:"
-            , indent 2 $ pretty $ BS8.unpack $ JSON.encodePretty hooks
+            , indent 2 $ pretty $ take 120 $ BS8.unpack $ JSON.encodePretty hooks
             ]
 
 data ActiveContractState =
