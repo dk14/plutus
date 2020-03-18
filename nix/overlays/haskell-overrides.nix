@@ -30,7 +30,6 @@ self: super: {
     plutus-tutorial = doctest doctestOpts (deferPluginErrors super.plutus-tutorial);
     plutus-use-cases = deferPluginErrors super.plutus-use-cases;
     plutus-playground-server = deferPluginErrors super.plutus-playground-server;
-    plutus-wallet-api = deferPluginErrors super.plutus-wallet-api;
     marlowe = deferPluginErrors super.marlowe;
 
     ########################################################################

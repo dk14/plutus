@@ -1,3 +1,4 @@
+{-# LANGUAGE ApplicativeDo       #-}
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE NamedFieldPuns      #-}
 {-# LANGUAGE OverloadedStrings   #-}
@@ -36,6 +37,8 @@ import qualified Plutus.SCB.Core               as Core
 import           Plutus.SCB.Types              (Config (Config), chainIndexConfig, nodeServerConfig,
                                                 signingProcessConfig, walletServerConfig)
 import           Plutus.SCB.Utils              (logErrorS, render)
+import qualified Plutus.SCB.Webserver.Server   as SCBServer
+import qualified PSGenerator
 import           System.Exit                   (ExitCode (ExitFailure), exitSuccess, exitWith)
 import qualified System.Remote.Monitoring      as EKG
 
@@ -54,6 +57,10 @@ data Command
     | ReportInstalledContracts
     | ReportActiveContracts
     | ReportTxHistory
+    | SCBWebserver
+    | PSGenerator
+          { _outputDir :: !FilePath
+          }
     deriving (Show, Eq)
 
 versionOption :: Parser (a -> a)
@@ -88,6 +95,8 @@ commandParser =
              [ migrationParser
              , allServersParser
              , mockWalletParser
+             , scbWebserverParser
+             , psGeneratorCommandParser
              , mockNodeParser
              , chainIndexParser
              , signingProcessParser
@@ -108,6 +117,17 @@ commandParser =
                             , reportContractHistoryParser
                             ]))
                   (fullDesc <> progDesc "Manage your smart contracts.")))
+
+psGeneratorCommandParser :: Mod CommandFields Command
+psGeneratorCommandParser =
+    command "psgenerator" $
+    flip info fullDesc $ do
+        _outputDir <-
+            argument
+                str
+                (metavar "OUTPUT_DIR" <>
+                 help "Output directory to write PureScript files to.")
+        pure PSGenerator {_outputDir}
 
 migrationParser :: Mod CommandFields Command
 migrationParser =
@@ -141,7 +161,14 @@ allServersParser :: Mod CommandFields Command
 allServersParser =
     command "all-servers" $
     info
-        (pure (ForkCommands [MockNode, MockWallet, ChainIndex, SigningProcess]))
+        (pure
+             (ForkCommands
+                  [ MockNode
+                  , MockWallet
+                  , ChainIndex
+                  , SigningProcess
+                  , SCBWebserver
+                  ]))
         (fullDesc <> progDesc "Run all the mock servers needed.")
 
 signingProcessParser :: Mod CommandFields Command
@@ -205,6 +232,13 @@ reportTxHistoryParser =
         (pure ReportTxHistory)
         (fullDesc <> progDesc "Show all submitted transactions.")
 
+scbWebserverParser :: Mod CommandFields Command
+scbWebserverParser =
+    command "tx" $
+    info
+        (pure SCBWebserver)
+        (fullDesc <> progDesc "Start the SCB backend webserver.")
+
 updateContractParser :: Mod CommandFields Command
 updateContractParser =
     command "update" $
@@ -232,6 +266,7 @@ runCliCommand Config {walletServerConfig, nodeServerConfig} MockWallet =
         (NodeServer.mscBaseUrl nodeServerConfig)
 runCliCommand Config {nodeServerConfig} MockNode =
     NodeServer.main nodeServerConfig
+runCliCommand config SCBWebserver = SCBServer.main config
 runCliCommand config (ForkCommands commands) =
     App . void . liftIO $ do
         threads <- traverse forkCommand commands
@@ -263,6 +298,7 @@ runCliCommand _ (ReportContractHistory uuid) = do
         (\index contract ->
              logInfoN $ render (parens (pretty index) <+> pretty contract)) =<<
         Core.activeContractHistory uuid
+runCliCommand _ PSGenerator {_outputDir} = liftIO $ PSGenerator.generate _outputDir
 
 main :: IO ()
 main = do

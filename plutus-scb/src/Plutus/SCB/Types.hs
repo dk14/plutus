@@ -25,6 +25,7 @@ import           Language.Plutus.Contract.Effects.OwnPubKey (OwnPubKeyRequest)
 import           Language.Plutus.Contract.Resumable         (ResumableError)
 import           Ledger.Address                             (Address)
 import           Ledger.Constraints                         (UnbalancedTx)
+import           Servant.Client                             (BaseUrl)
 import           Servant.Client                             (ServantError)
 import           Wallet.API                                 (WalletAPIError)
 
@@ -121,10 +122,18 @@ data Config =
         { dbConfig             :: DbConfig
         , walletServerConfig   :: WalletServer.Config
         , nodeServerConfig     :: NodeServer.MockServerConfig
+        , scbWebserverConfig   :: WebserverConfig
         , chainIndexConfig     :: ChainIndex.ChainIndexConfig
         , signingProcessConfig :: SigningProcess.SigningProcessConfig
         }
     deriving (Show, Eq, Generic, FromJSON)
+
+newtype WebserverConfig =
+    WebserverConfig
+        { baseUrl :: BaseUrl
+        }
+    deriving (Show, Eq, Generic)
+    deriving anyclass (FromJSON, ToJSON)
 
 data Source
     = ContractEventSource
