@@ -188,6 +188,7 @@ button.minus-btn:hover {
   line-height: 1.4;
   flex: 1;
 }
+
 .participants em {
   display: inline-block;
   margin-bottom: 0.5rem;
@@ -346,4 +347,15 @@ button.minus-btn:hover {
 
 .state-label {
   font-weight: normal;
+}
+
+.error-row {
+  display: flex;
+  width: 50%;
+  justify-content: space-between;
+}
+
+.error-headers {
+  font-weight: bold;
+  padding: 0.5em 0em;
 }
