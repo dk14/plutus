@@ -171,6 +171,14 @@ button.minus-btn {
   margin-left: 0.5rem;
 }
 
+button.minus-btn.disabled {
+  background: lightgray;
+}
+
+button.minus-btn.disabled:hover {
+  background: lightgray;
+}
+
 button.minus-btn:before {
   content: none;
 }
@@ -358,4 +366,10 @@ button.minus-btn:hover {
 .error-headers {
   font-weight: bold;
   padding: 0.5em 0em;
+}
+
+.demo-list li a.disabled {
+  color: lightgray;
+  pointer-events: none;
+  cursor: default;
 }
