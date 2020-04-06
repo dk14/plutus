@@ -65,8 +65,16 @@ psJson = TypeInfo "" "Data.RawJson" "RawJson" []
 psJsonEither :: MonadReader BridgeData m => m PSType
 psJsonEither = TypeInfo "" "Data.Json.JsonEither" "JsonEither" <$> psTypeParameters
 
+psUnit :: PSType
+psUnit = TypeInfo "" "Data.Unit" "Unit" []
+
 psJsonTuple :: MonadReader BridgeData m => m PSType
-psJsonTuple = TypeInfo "" "Data.Json.JsonTuple" "JsonTuple" <$> psTypeParameters
+psJsonTuple = expand <$> psTypeParameters
+  where
+    expand []       = psUnit
+    expand [x]      = x
+    expand p@[_, _] = TypeInfo "" "Data.Json.JsonTuple" "JsonTuple" p
+    expand (x:ys)   = TypeInfo "" "Data.Json.JsonTuple" "JsonTuple" [x, expand ys]
 
 integerBridge :: BridgePart
 integerBridge = do

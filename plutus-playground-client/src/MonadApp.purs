@@ -12,6 +12,7 @@ import Control.Monad.State.Class (class MonadState)
 import Control.Monad.State.Trans (StateT)
 import Control.Monad.Trans.Class (class MonadTrans, lift)
 import Data.Json.JsonEither (JsonEither)
+import MonadAnimate (class MonadAnimate, delay)
 import Data.Maybe (Maybe)
 import Data.MediaType (MediaType)
 import Data.Newtype (class Newtype, unwrap, wrap)
@@ -50,8 +51,6 @@ class
   setDropEffect :: DropEffect -> DragEvent -> m Unit
   setDataTransferData :: DragEvent -> MediaType -> String -> m Unit
   readFileFromDragEvent :: DragEvent -> m String
-  --
-  delay :: Milliseconds -> m Unit
   --
   getOauthStatus :: m (WebData AuthStatus)
   getGistByGistId :: GistId -> m (WebData Gist)
@@ -108,7 +107,6 @@ instance monadAppHalogenApp ::
   setDropEffect dropEffect event = wrap $ liftEffect $ DataTransfer.setDropEffect dropEffect $ dataTransfer event
   setDataTransferData event mimeType value = wrap $ liftEffect $ DataTransfer.setData mimeType value $ dataTransfer event
   readFileFromDragEvent event = wrap $ liftAff $ FileEvents.readFileFromDragEvent event
-  delay ms = wrap $ liftAff $ Aff.delay ms
   saveBuffer text = wrap $ Editor.saveBuffer bufferLocalStorageKey text
   getOauthStatus = runAjax Server.getOauthStatus
   getGistByGistId gistId = runAjax $ Server.getGistsByGistId gistId
@@ -117,6 +115,9 @@ instance monadAppHalogenApp ::
   patchGistByGistId newGist gistId = runAjax $ Server.patchGistsByGistId newGist gistId
   postContract source = runAjax $ Server.postContract source
   resizeBalancesChart = wrap $ void $ H.query _balancesChartSlot unit (Chartist.Resize unit)
+
+instance monadAnimateHalogenApp :: MonadAnimate (HalogenApp m) where
+  delay time = wrap (delay time)
 
 runAjax ::
   forall m a.

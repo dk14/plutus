@@ -3,7 +3,6 @@
 {-# LANGUAGE DerivingStrategies    #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE OverloadedStrings     #-}
@@ -56,8 +55,9 @@ import           Servant.PureScript                         (HasBridge, Settings
                                                              defaultSettings, languageBridge,
                                                              writeAPIModuleWithSettings, _generateSubscriberAPI)
 import           Wallet.API                                 (WalletAPIError)
+import qualified Wallet.Emulator.Wallet                     as EM
 import           Wallet.Rollup.Types                        (AnnotatedTx, BeneficialOwner, DereferencedInput,
-                                                             SequenceId)
+                                                             SequenceId, TxKey)
 
 psJsonUUID :: PSType
 psJsonUUID = TypeInfo "" "Data.Json.JsonUUID" "JsonUUID" []
@@ -77,8 +77,16 @@ psJsonEither =
 psJsonMap :: MonadReader BridgeData m => m PSType
 psJsonMap = TypeInfo "" "Data.Json.JsonMap" "JsonMap" <$> psTypeParameters
 
+psUnit :: PSType
+psUnit = TypeInfo "" "Data.Unit" "Unit" []
+
 psJsonTuple :: MonadReader BridgeData m => m PSType
-psJsonTuple = TypeInfo "" "Data.Json.JsonTuple" "JsonTuple" <$> psTypeParameters
+psJsonTuple = expand <$> psTypeParameters
+  where
+    expand []       = psUnit
+    expand [x]      = x
+    expand p@[_, _] = TypeInfo "" "Data.Json.JsonTuple" "JsonTuple" p
+    expand (x:ys)   = TypeInfo "" "Data.Json.JsonTuple" "JsonTuple" [x, expand ys]
 
 integerBridge :: BridgePart
 integerBridge = do
@@ -206,8 +214,10 @@ myTypes =
     , (equal <*> (genericShow <*> mkSumType)) (Proxy @ActiveContract)
     , (equal <*> (genericShow <*> mkSumType)) (Proxy @ActiveContractState)
     , (equal <*> (genericShow <*> mkSumType)) (Proxy @PartiallyDecodedResponse)
+    , (order <*> (genericShow <*> mkSumType)) (Proxy @TxKey)
     , (order <*> (genericShow <*> mkSumType)) (Proxy @SequenceId)
     , (equal <*> (genericShow <*> mkSumType)) (Proxy @AnnotatedTx)
+    , (equal <*> (genericShow <*> mkSumType)) (Proxy @EM.Wallet)
     , (equal <*> (genericShow <*> mkSumType)) (Proxy @DereferencedInput)
     , (order <*> (genericShow <*> mkSumType)) (Proxy @BeneficialOwner)
     , (equal <*> (genericShow <*> mkSumType)) (Proxy @TxIn)

@@ -30,8 +30,7 @@ import qualified Cardano.Wallet.Mock                           as WalletServer
 import           Control.Concurrent.MVar                       (MVar, newMVar)
 import           Control.Lens                                  (assign, makeLenses, use, view, zoom)
 import           Control.Monad                                 (void)
-import           Control.Monad.Except                          (throwError)
-import           Control.Monad.Except                          (ExceptT, MonadError, runExceptT)
+import           Control.Monad.Except                          (ExceptT, MonadError, runExceptT, throwError)
 import           Control.Monad.Freer                           (Eff, interpret, interpretM, runM)
 import           Control.Monad.Freer.Extras                    (errorToMonadError, handleZoomedError, handleZoomedState,
                                                                 stateToMonadState)

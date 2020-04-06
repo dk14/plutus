@@ -94,7 +94,7 @@ import qualified Wallet.Emulator.MultiAgent                 as EM
 import qualified Wallet.Emulator.NodeClient                 as EM
 import qualified Wallet.Emulator.Wallet                     as EM
 import           Wallet.Rollup.Types                        (AnnotatedTx, BeneficialOwner, DereferencedInput,
-                                                             SequenceId)
+                                                             SequenceId, TxKey)
 
 psAssocMap :: MonadReader BridgeData m => m PSType
 psAssocMap =
@@ -116,8 +116,16 @@ psJsonEither =
 psJsonMap :: MonadReader BridgeData m => m PSType
 psJsonMap = TypeInfo "" "Data.Json.JsonMap" "JsonMap" <$> psTypeParameters
 
+psUnit :: PSType
+psUnit = TypeInfo "" "Data.Unit" "Unit" []
+
 psJsonTuple :: MonadReader BridgeData m => m PSType
-psJsonTuple = TypeInfo "" "Data.Json.JsonTuple" "JsonTuple" <$> psTypeParameters
+psJsonTuple = expand <$> psTypeParameters
+  where
+    expand []       = psUnit
+    expand [x]      = x
+    expand p@[_, _] = TypeInfo "" "Data.Json.JsonTuple" "JsonTuple" p
+    expand (x:ys)   = TypeInfo "" "Data.Json.JsonTuple" "JsonTuple" [x, expand ys]
 
 integerBridge :: BridgePart
 integerBridge = do
@@ -287,6 +295,7 @@ myTypes =
     , (equal <*> (genericShow <*> mkSumType)) (Proxy @AnnotatedTx)
     , (equal <*> (genericShow <*> mkSumType)) (Proxy @DereferencedInput)
     , (order <*> (genericShow <*> mkSumType)) (Proxy @BeneficialOwner)
+    , (equal <*> (genericShow <*> mkSumType)) (Proxy @TxKey)
     , (equal <*> (genericShow <*> mkSumType)) (Proxy @TxId)
     , (equal <*> (genericShow <*> mkSumType)) (Proxy @TxIn)
     , (equal <*> (genericShow <*> mkSumType)) (Proxy @TxOut)

@@ -12,13 +12,17 @@ module Plutus.SCB.Webserver.Server
     ( main
     ) where
 
+import           Control.Lens               (view, _1, _2, _3)
 import           Control.Monad.Except       (ExceptT (ExceptT))
 import           Control.Monad.IO.Class     (MonadIO, liftIO)
 import           Control.Monad.Logger       (MonadLogger, logInfoN)
 import           Data.Bifunctor             (first)
 import qualified Data.ByteString.Lazy.Char8 as LBS
+import           Data.Map                   (Map)
+import qualified Data.Map                   as Map
 import           Data.Proxy                 (Proxy (Proxy))
 import           Eventful                   (streamEventEvent)
+import           Ledger                     (PubKeyHash)
 import           Network.Wai.Handler.Warp   (run)
 import           Plutus.SCB.App             (App, runApp)
 import           Plutus.SCB.Arbitrary       ()
@@ -31,6 +35,9 @@ import           Plutus.SCB.Webserver.Types
 import           Servant                    ((:<|>) ((:<|>)), (:>), Application, Handler (Handler), err500, errBody,
                                              hoistServer, serve)
 import           Servant.Client             (BaseUrl (baseUrlPort))
+import           Wallet.Emulator.Wallet     (Wallet)
+import qualified Wallet.Rollup              as Rollup
+import           Wallet.Rollup.Types        (AnnotatedTx)
 
 asHandler :: Config -> App a -> Handler a
 asHandler config action =
@@ -46,8 +53,21 @@ fullReport :: App FullReport
 fullReport = do
     latestContractStatus <- runGlobalQuery Query.latestContractStatus
     events <- fmap streamEventEvent <$> runGlobalQuery Query.pureProjection
-    utxoIndex <- runGlobalQuery Query.utxoIndexProjection
-    pure FullReport {latestContractStatus, events, utxoIndex}
+    transactions <- runGlobalQuery Query.utxoIndexProjection
+    let walletMap :: Map PubKeyHash Wallet = Map.empty -- TODO
+    annotatedBlockchain :: [[AnnotatedTx]] <-
+        Rollup.doAnnotateBlockchain $ view _1 transactions
+    let transactionMap = view _2 transactions
+    let utxoIndex = view _3 transactions
+    pure
+        FullReport
+            { latestContractStatus
+            , events
+            , transactionMap
+            , utxoIndex
+            , annotatedBlockchain
+            , walletMap
+            }
 
 app :: Config -> Application
 app config =

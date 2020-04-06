@@ -1,10 +1,12 @@
-{-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Plutus.SCB.CoreSpec
     ( tests
     ) where
 
+import           Control.Lens                                  (view, _1)
 import           Control.Monad                                 (void)
 import           Control.Monad.IO.Class                        (MonadIO, liftIO)
 import           Data.Aeson                                    as JSON
@@ -16,11 +18,15 @@ import           Ledger.Ada                                    (lovelaceValueOf)
 import           Plutus.SCB.Command                            ()
 import           Plutus.SCB.Core
 import           Plutus.SCB.Events                             (ChainEvent)
+import           Plutus.SCB.Query                              (utxoIndexProjection)
 import           Plutus.SCB.TestApp                            (TestApp, runScenario, sync, valueAt)
 import           Test.QuickCheck.Instances.UUID                ()
 import           Test.Tasty                                    (TestTree, testGroup)
-import           Test.Tasty.HUnit                              (HasCallStack, assertEqual, testCase)
+import           Test.Tasty.HUnit                              (HasCallStack, assertBool, assertEqual, testCase)
 import           Wallet.API                                    (ownPubKey)
+import           Wallet.Rollup                                 (doAnnotateBlockchain)
+import           Wallet.Rollup.Types                           (DereferencedInput (DereferencedInput, InputNotFound),
+                                                                dereferencedInputs, isFound)
 
 tests :: TestTree
 tests = testGroup "SCB.Core" [installContractTests, executionTests]
@@ -114,6 +120,18 @@ executionTests =
                       "The wallet should now have its money back."
                       (lovelaceValueOf openingBalance)
                       balance2
+              index <-
+                  streamProjectionState <$>
+                  refreshProjection (globalStreamProjection utxoIndexProjection)
+              liftIO $ do
+                  annotatedBlockchain <- doAnnotateBlockchain $ view _1 index
+                  let allDereferencedInputs :: [DereferencedInput]
+                      allDereferencedInputs =
+                          mconcat $
+                          dereferencedInputs <$> mconcat annotatedBlockchain
+                  assertBool
+                      "Full TX history can be annotated."
+                      (all isFound allDereferencedInputs)
         ]
 
 assertTxCount ::
@@ -128,9 +146,7 @@ assertTxCount msg expected = do
     liftIO $ assertEqual msg expected $ length txs
 
 lock :: UUID -> Contracts.Game.LockParams -> TestApp ()
-lock uuid params =
-    updateContract uuid "lock" (toJSON params)
+lock uuid params = updateContract uuid "lock" (toJSON params)
 
 guess :: UUID -> Contracts.Game.GuessParams -> TestApp ()
-guess uuid params =
-    updateContract uuid "guess" (toJSON params)
+guess uuid params = updateContract uuid "guess" (toJSON params)

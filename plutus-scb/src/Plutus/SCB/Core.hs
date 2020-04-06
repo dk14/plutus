@@ -40,7 +40,7 @@ import           Cardano.Node.API                           (NodeFollowerAPI, su
 import qualified Cardano.Node.API                           as NodeClient
 import           Cardano.Node.Types                         (FollowerID)
 import           Control.Error.Util                         (note)
-import           Control.Lens                               (assign, modifying, use, _1, _2)
+import           Control.Lens                               (assign, modifying, use, view, _1, _2, _3)
 import           Control.Monad                              (void)
 import           Control.Monad.Except                       (MonadError, throwError)
 import           Control.Monad.Except.Extras                (mapError)
@@ -80,6 +80,7 @@ import           Eventful.Store.Sql                         (JSONString, SqlEven
 import           Eventful.Store.Sqlite                      (sqliteEventStoreWriter)
 import           Language.Plutus.Contract.Effects.OwnPubKey (OwnPubKeyRequest (NotWaitingForPubKey, WaitingForPubKey))
 import qualified Language.Plutus.Contract.Wallet            as Wallet
+import           Ledger                                     (Tx)
 import qualified Ledger
 import           Ledger.Constraints                         (UnbalancedTx)
 import           Plutus.SCB.Command                         (installCommand, saveBalancedTx, saveBalancedTxResult,
@@ -254,7 +255,9 @@ handleUtxoAtHook ::
     -> m ()
 handleUtxoAtHook i address = do
     logDebugN $ "Fetching utxo-at: " <> tshow address
-    utxoIndex <- runGlobalQuery utxoIndexProjection
+    -- TODO Tidy.
+    transactions <- runGlobalQuery utxoIndexProjection
+    let utxoIndex = ((,) <$> view _2 <*> view _3) transactions
     let utxoAtAddress = utxoAt utxoIndex address
     logDebugN $ "Fetched utxo-at: " <> tshow utxoAtAddress
     invokeContractUpdate i $ EventPayload "utxo-at" (JSON.toJSON utxoAtAddress)

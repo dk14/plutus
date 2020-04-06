@@ -10,6 +10,7 @@ import AjaxUtils (renderForeignErrors)
 import Analytics (Event, defaultEvent, trackEvent)
 import Chain.Eval as Chain
 import Chain.Types (AnnotatedBlockchain(..), ChainFocus(..))
+import Chain.Types as Chain
 import Control.Monad.Error.Class (class MonadThrow)
 import Control.Monad.Error.Extra (mapError)
 import Control.Monad.Except.Extra (noteT)
@@ -99,11 +100,7 @@ mkInitialState editorPreferences = do
         , authStatus: NotAsked
         , createGistResult: NotAsked
         , gistUrl: Nothing
-        , blockchainVisualisationState:
-          { chainFocus: Nothing
-          , chainFocusAppearing: false
-          , chainFocusAge: EQ
-          }
+        , blockchainVisualisationState: Chain.initialState
         }
 
 ------------------------------------------------------------
@@ -206,7 +203,7 @@ toEvent EvaluateActions = Just $ (defaultEvent "EvaluateActions") { category = J
 
 toEvent (PopulateAction _ _ _) = Just $ (defaultEvent "PopulateAction") { category = Just "Action" }
 
-toEvent (SetChainFocus (Just (FocusTx _))) = Just $ (defaultEvent "BlockchainFocus") { category = Just "Transaction" }
+toEvent (SeChainFocus (Just (FocusTx _))) = Just $ (defaultEvent "BlockchainFocus") { category = Just "Transaction" }
 
 toEvent (SetChainFocus Nothing) = Nothing
 

@@ -25,8 +25,7 @@ import           Language.Plutus.Contract.Effects.OwnPubKey (OwnPubKeyRequest)
 import           Language.Plutus.Contract.Resumable         (ResumableError)
 import           Ledger.Address                             (Address)
 import           Ledger.Constraints                         (UnbalancedTx)
-import           Servant.Client                             (BaseUrl)
-import           Servant.Client                             (ServantError)
+import           Servant.Client                             (BaseUrl, ServantError)
 import           Wallet.API                                 (WalletAPIError)
 
 newtype Contract =
